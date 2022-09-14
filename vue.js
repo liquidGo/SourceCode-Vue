@@ -76,52 +76,111 @@
 
 
 
-// **3methods的实现源码
+// // **3methods的实现源码
+// class Vue {
+//     constructor(options) {
+//         this.$options = options
+//         if (typeof options.beforeCreate === 'function') {
+//             options.beforeCreate.bind(this)()
+//         }
+//         this.$data = options.data;
+
+//         if (typeof options.created === 'function') {
+//             options.created.bind(this)()
+//         }
+//         if (typeof options.beforeMount === 'function') {
+//             options.beforeMount.bind(this)()
+//         }
+//         this.$el = document.querySelector(options.el);
+//         this.re(this.$el)
+//         if (typeof options.mounted === 'function') {
+//             options.mounted.bind(this)()
+//         }
+//     }
+//     re(node) {
+//         node.childNodes.forEach((item, index) => {
+//             if (item.nodeType === 3) {
+//                 let reg = /\{\{(.*?)\}\}/g;
+//                 let text = item.textContent;
+//                 item.textContent = text.replace(reg, (a, b) => {
+//                     return this.$data[b]
+//                 })
+//             } else if (item.nodeType === 1) {
+//                 if (item.hasAttribute('@click')) {
+//                     let att = item.getAttribute('@click').trim()
+//                     item.addEventListener('click', (e) => {
+//                         let a = this.$options.methods[att].bind(this);
+//                         a(e)
+//                     })
+//                 }
+//                 if (item.childNodes.length > 0) {
+//                     this.re(item)
+//                 }
+//             }
+//         })
+//     }
+// }
+
+
+
+// **4data代码劫持
 class Vue {
     constructor(options) {
-        // 给实例化对象上添加传进来的数据
-        this.$options = options
-
-        if (typeof options.beforeCreate === 'function') {
+        this.$options = options;
+        if (typeof options.beforeCreate == 'function') {
             options.beforeCreate.bind(this)()
         }
-        this.$data = options.data;
+        this.$data = options.data
+        // 劫持函数
+        this.proxyData()
 
-        if (typeof options.created === 'function') {
+        if (typeof options.created == 'function') {
             options.created.bind(this)()
         }
-        if (typeof options.beforeMount === 'function') {
+        if (typeof options.beforeMount == 'function') {
             options.beforeMount.bind(this)()
         }
         this.$el = document.querySelector(options.el);
         this.re(this.$el);
-        if (typeof options.mounted === 'function') {
+        if (typeof options.mounted == 'function') {
             options.mounted.bind(this)()
         }
     }
     re(node) {
         node.childNodes.forEach((item, index) => {
             if (item.nodeType === 3) {
-                let reg = /\{\{(.*?)\}\}/g
+                let reg = /\{\{(.*?)\}\}/g;
                 let text = item.textContent;
                 item.textContent = text.replace(reg, (a, b) => {
                     return this.$data[b]
                 })
             } else if (item.nodeType === 1) {
-                // 如果当前的dom元素中属性包含@click
                 if (item.hasAttribute('@click')) {
-                    // 获取到@click的键值
-                    let fnName = item.getAttribute('@click')
-                    // 给当前的dom元素绑定触发的事件，方法就是元素的键值
+                    let attr = item.getAttribute('@click').trim();
+                    console.log(attr, 'attr');
                     item.addEventListener('click', (e) => {
-                        this.eventFn = this.$options.methods[fnName].bind(this)
-                        this.eventFn(e)
+                        let a = this.$options.methods[attr].bind(this)
+                        a(e);
                     })
                 }
-                if (item.childNodes.length > 0) {
+                if (node.childNodes.length > 0) {
                     this.re(item)
                 }
             }
         })
+    }
+    // 设置劫持每一个this.$data里面的数据并且劫持到this这个大对象上面
+    // 这样一旦this上面的数据变了，this.$data里面的数据也进行改变
+    proxyData() {
+        for (let key in this.$data) {
+            Object.defineProperty(this, key, {
+                get() {
+                    return this.$data[key]
+                },
+                set(val) {
+                    this.$data[key] = val
+                }
+            })
+        }
     }
 }
