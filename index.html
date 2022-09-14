@@ -20,7 +20,19 @@
         el: '#app',
         data: {
             str: '你一定行！'
-        }
+        },
+        beforeCreate() {
+            console.log('beforeCreate', this);
+        },
+        created() {
+            console.log('created',this);
+        },
+        beforeMount() {
+            console.log('beforeMount');
+        },
+        mounted() {
+            console.log('mounted');
+        },
     })
 </script>
 
