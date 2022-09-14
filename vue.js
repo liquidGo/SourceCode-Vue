@@ -124,15 +124,83 @@
 
 
 // **4data代码劫持
+// class Vue {
+//     constructor(options) {
+//         this.$options = options
+//         if (typeof options.beforeCreate == 'function') {
+//             options.beforeCreate.bind(this)()
+//         }
+//         this.$data = options.data;
+//         this.proxyData()
+
+//         if (typeof options.created == 'function') {
+//             options.created.bind(this)()
+//         }
+//         if (typeof options.beforeMount == 'function') {
+//             options.beforeMount.bind(this)()
+//         }
+//         this.$el = document.querySelector(options.el);
+//         this.replace1(this.$el)
+
+//         if (typeof options.mounted == 'function') {
+//             options.mounted.bind(this)()
+//         }
+
+//     }
+//     replace1(node) {
+//         node.childNodes.forEach((item, index) => {
+//             if (item.nodeType === 3) {
+//                 let reg = /\{\{(.*?)\}\}/g;
+//                 let text = item.textContent;
+//                 item.textContent = text.replace(reg, (a, b) => {
+//                     b=b.trim()
+//                     return this.$data[b]
+//                 })
+//             } else if (item.nodeType === 1) {
+//                 if (item.hasAttribute('@click')) {
+//                     let attr = item.getAttribute('@click');
+//                     item.addEventListener('click', (e) => {
+//                         let fn = this.$options.methods[attr].bind(this)
+//                         fn(e)
+//                     })
+//                 }
+//                 if (item.childNodes.length > 0) {
+//                     this.replace1(item)
+//                 }
+//             }
+//         })
+//     }
+//     proxyData() {
+//         for (var key in this.$data) {
+//             Object.defineProperty(this, key, {
+//                 get() {
+//                     return this.$data[key]
+//                 },
+//                 set(val) {
+//                     this.$data[key] = val
+//                 }
+//             })
+//         }
+//     }
+// }
+
+
+
+
+// **5视图更新
 class Vue {
     constructor(options) {
-        this.$options = options;
+        this.$options = options
+        //1、 watchEvent这个对象里键名就是使用变量，键值就是使用了几次就有几个watch
+        this.$watchEvent = {}
+
         if (typeof options.beforeCreate == 'function') {
             options.beforeCreate.bind(this)()
         }
-        this.$data = options.data
-        // 劫持函数
+        this.$data = options.data;
         this.proxyData()
+        // 执行更行
+        this.viewUpdate()
 
         if (typeof options.created == 'function') {
             options.created.bind(this)()
@@ -141,38 +209,52 @@ class Vue {
             options.beforeMount.bind(this)()
         }
         this.$el = document.querySelector(options.el);
-        this.re(this.$el);
+        this.replace1(this.$el)
+
         if (typeof options.mounted == 'function') {
             options.mounted.bind(this)()
         }
+
     }
-    re(node) {
+    replace1(node) {
         node.childNodes.forEach((item, index) => {
             if (item.nodeType === 3) {
                 let reg = /\{\{(.*?)\}\}/g;
                 let text = item.textContent;
                 item.textContent = text.replace(reg, (a, b) => {
+                    b = b.trim()
+                    // 2、如果模板语法中没有这个数据就不去渲染
+                    if (this.hasOwnProperty(b)) {
+                        // 把参数传入视图更新的构造器函数
+                        // b是data里的变量，item是当前要替换的视图层
+                        // textContent是改变node文本节点的属性
+                        let watch = new Watch(this, b, item, 'textContent')
+                        if (this.$watchEvent[b]) {
+                            this.$watchEvent[b].push(watch)
+                        } else {
+
+                            this.$watchEvent[b] = [];
+                            this.$watchEvent[b].push(watch)
+                        }
+                    }
                     return this.$data[b]
                 })
             } else if (item.nodeType === 1) {
                 if (item.hasAttribute('@click')) {
-                    let attr = item.getAttribute('@click').trim();
-                    console.log(attr, 'attr');
+                    let attr = item.getAttribute('@click');
                     item.addEventListener('click', (e) => {
-                        let a = this.$options.methods[attr].bind(this)
-                        a(e);
+                        let fn = this.$options.methods[attr].bind(this)
+                        fn(e)
                     })
                 }
-                if (node.childNodes.length > 0) {
-                    this.re(item)
+                if (item.childNodes.length > 0) {
+                    this.replace1(item)
                 }
             }
         })
     }
-    // 设置劫持每一个this.$data里面的数据并且劫持到this这个大对象上面
-    // 这样一旦this上面的数据变了，this.$data里面的数据也进行改变
     proxyData() {
-        for (let key in this.$data) {
+        for (var key in this.$data) {
             Object.defineProperty(this, key, {
                 get() {
                     return this.$data[key]
@@ -182,5 +264,42 @@ class Vue {
                 }
             })
         }
+    }
+    //4、 监控this上面的data发生变化就进行数据的更新
+    viewUpdate() {
+        for (var key in this.$data) {
+            let value = this.$data[key];
+            let that = this;
+            Object.defineProperty(this.$data, key, {
+                get() {
+                    return value
+                },
+                set(val) {
+                    value = val
+                    if (that.$watchEvent[key]) {
+                        // 如果watchEvent使用了某个变量几次，就存在几个watch实例化，就遍历对他调用
+                        that.$watchEvent[key].forEach((item, index) => {
+                            item.update()
+                        })
+                    }
+                }
+            })
+        }
+    }
+}
+
+
+//3、 写一个新的构造器监听视图层的变化
+class Watch {
+    constructor(vm, variable, view, attr) {
+        this.vm = vm
+        this.key = variable
+        this.view = view
+        this.attr = attr
+    }
+    update() {
+        console.log(123);
+        // 相当于item.textContent=this[变量]
+        this.view[this.attr] = this.vm[this.key]
     }
 }
