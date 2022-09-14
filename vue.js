@@ -32,15 +32,58 @@
 // }
 
 
-// **2生命周期的实现
+
+
+// // **2生命周期的实现
+// class Vue {
+//     constructor(options) {
+//         // 调用传过来的函数
+//         if (typeof options.beforeCreate === 'function') {
+//             // bind(this)是在调用函数的时候将函数指向为新new的对象，否则this指向自身
+//             options.beforeCreate.bind(this)()
+//         }
+//         // 在页面创建中拥有了data，在create可以获取到
+//         this.$data = options.data;
+
+//         if (typeof options.created === 'function') {
+//             options.created.bind(this)()
+//         }
+//         if (typeof options.beforeMount === 'function') {
+//             options.beforeMount.bind(this)()
+//         }
+//         // 挂在中拥有了$el，在mounted里面可以获取到
+//         this.$el = document.querySelector(options.el);
+//         this.re(this.$el)
+//         if (typeof options.mounted === 'function') {
+//             options.mounted.bind(this)()
+//         }
+
+//     }
+//     re(node) {
+//         node.childNodes.forEach((item, index) => {
+//             if (item.nodeType == 3) {
+//                 let reg = /\{\{(.*?)\}\}/g
+//                 let text = item.textContent;
+//                 item.textContent = text.replace(reg, (a, b) => {
+//                     return this.$data[b]
+//                 })
+//             } else if (item.nodeType === 1) {
+//                 this.re(item)
+//             }
+//         })
+//     }
+// }
+
+
+
+// **3methods的实现源码
 class Vue {
     constructor(options) {
-        // 调用传过来的函数
+        this.$options = options
+
         if (typeof options.beforeCreate === 'function') {
-            // bind(this)是在调用函数的时候将函数指向为新new的对象，否则this指向自身
             options.beforeCreate.bind(this)()
         }
-        // 在页面创建中拥有了data，在create可以获取到
         this.$data = options.data;
 
         if (typeof options.created === 'function') {
@@ -49,24 +92,31 @@ class Vue {
         if (typeof options.beforeMount === 'function') {
             options.beforeMount.bind(this)()
         }
-        // 挂在中拥有了$el，在mounted里面可以获取到
         this.$el = document.querySelector(options.el);
-        this.re(this.$el)
+        this.re(this.$el);
         if (typeof options.mounted === 'function') {
             options.mounted.bind(this)()
         }
-
     }
     re(node) {
         node.childNodes.forEach((item, index) => {
-            if (item.nodeType == 3) {
+            if (item.nodeType === 3) {
                 let reg = /\{\{(.*?)\}\}/g
                 let text = item.textContent;
                 item.textContent = text.replace(reg, (a, b) => {
                     return this.$data[b]
                 })
             } else if (item.nodeType === 1) {
-                this.re(item)
+                if (item.hasAttribute('@click')) {
+                    let fnName = item.getAttribute('@click')
+                    // console.log(fnName,'l');
+                    item.addEventListener('click',()=>{
+                        this.$options.methods[fnName]()
+                    })
+                }
+                if (item.childNodes.length > 0) {
+                    this.re(item)
+                }
             }
         })
     }

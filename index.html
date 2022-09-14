@@ -13,6 +13,7 @@
     <div id="app">
         <div>{{str}}</div>
         {{str}}
+        <button @click="btn">点击弹出</button>
     </div>
 </body>
 <script>
@@ -25,7 +26,7 @@
             console.log('beforeCreate', this);
         },
         created() {
-            console.log('created',this);
+            console.log('created', this);
         },
         beforeMount() {
             console.log('beforeMount');
@@ -33,6 +34,11 @@
         mounted() {
             console.log('mounted');
         },
+        methods: {
+            btn() {
+                alert('触发了按钮')
+            }
+        }
     })
 </script>
 
