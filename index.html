@@ -35,8 +35,9 @@
             console.log('mounted');
         },
         methods: {
-            btn() {
+            btn(e) {
                 alert('触发了按钮')
+                console.log(e,'事件');
             }
         }
     })

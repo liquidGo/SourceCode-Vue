@@ -79,6 +79,7 @@
 // **3methods的实现源码
 class Vue {
     constructor(options) {
+        // 给实例化对象上添加传进来的数据
         this.$options = options
 
         if (typeof options.beforeCreate === 'function') {
@@ -107,11 +108,14 @@ class Vue {
                     return this.$data[b]
                 })
             } else if (item.nodeType === 1) {
+                // 如果当前的dom元素中属性包含@click
                 if (item.hasAttribute('@click')) {
+                    // 获取到@click的键值
                     let fnName = item.getAttribute('@click')
-                    // console.log(fnName,'l');
-                    item.addEventListener('click',()=>{
-                        this.$options.methods[fnName]()
+                    // 给当前的dom元素绑定触发的事件，方法就是元素的键值
+                    item.addEventListener('click', (e) => {
+                        this.eventFn = this.$options.methods[fnName].bind(this)
+                        this.eventFn(e)
                     })
                 }
                 if (item.childNodes.length > 0) {
