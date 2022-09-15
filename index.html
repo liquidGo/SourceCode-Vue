@@ -13,6 +13,7 @@
     <div id="app">
         <div>{{str}}</div>
         {{str}}
+        <input type="text" v-model="str" />
         <button @click="btn">点击弹出</button>
     </div>
 </body>
@@ -36,7 +37,7 @@
         },
         methods: {
             btn(e) {
-                this.str='一定行！'
+                this.str = '一定行！'
                 console.log(this, 'this');
             }
         }

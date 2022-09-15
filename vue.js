@@ -188,68 +188,197 @@
 
 
 // **5视图更新
+// class Vue {
+//     constructor(options) {
+//         this.$options = options
+//         //1、 watchEvent这个对象里键名就是使用变量，键值就是使用了几次就有几个watch
+//         this.$watchEvent = {}
+
+//         if (typeof options.beforeCreate == 'function') {
+//             options.beforeCreate.bind(this)()
+//         }
+//         this.$data = options.data;
+//         this.proxyData()
+//         // 执行更行
+//         this.viewUpdate()
+
+//         if (typeof options.created == 'function') {
+//             options.created.bind(this)()
+//         }
+//         if (typeof options.beforeMount == 'function') {
+//             options.beforeMount.bind(this)()
+//         }
+//         this.$el = document.querySelector(options.el);
+//         this.replace1(this.$el)
+
+//         if (typeof options.mounted == 'function') {
+//             options.mounted.bind(this)()
+//         }
+
+//     }
+//     replace1(node) {
+//         node.childNodes.forEach((item, index) => {
+//             if (item.nodeType === 3) {
+//                 let reg = /\{\{(.*?)\}\}/g;
+//                 let text = item.textContent;
+//                 item.textContent = text.replace(reg, (a, b) => {
+//                     b = b.trim()
+//                     // 2、如果模板语法中没有这个数据就不去渲染
+//                     if (this.hasOwnProperty(b)) {
+//                         // 把参数传入视图更新的构造器函数
+//                         // b是data里的变量，item是当前要替换的视图层
+//                         // textContent是改变node文本节点的属性
+//                         let watch = new Watch(this, b, item, 'textContent')
+//                         if (this.$watchEvent[b]) {
+//                             this.$watchEvent[b].push(watch)
+//                         } else {
+
+//                             this.$watchEvent[b] = [];
+//                             this.$watchEvent[b].push(watch)
+//                         }
+//                     }
+//                     return this.$data[b]
+//                 })
+//             } else if (item.nodeType === 1) {
+//                 if (item.hasAttribute('@click')) {
+//                     let attr = item.getAttribute('@click');
+//                     item.addEventListener('click', (e) => {
+//                         let fn = this.$options.methods[attr].bind(this)
+//                         fn(e)
+//                     })
+//                 }
+//                 if (item.childNodes.length > 0) {
+//                     this.replace1(item)
+//                 }
+//             }
+//         })
+//     }
+//     proxyData() {
+//         for (var key in this.$data) {
+//             Object.defineProperty(this, key, {
+//                 get() {
+//                     return this.$data[key]
+//                 },
+//                 set(val) {
+//                     this.$data[key] = val
+//                 }
+//             })
+//         }
+//     }
+//     //4、 监控this上面的data发生变化就进行数据的更新
+//     viewUpdate() {
+//         for (var key in this.$data) {
+//             let value = this.$data[key];
+//             let that = this;
+//             Object.defineProperty(this.$data, key, {
+//                 get() {
+//                     return value
+//                 },
+//                 set(val) {
+//                     value = val
+//                     if (that.$watchEvent[key]) {
+//                         // 如果watchEvent使用了某个变量几次，就存在几个watch实例化，就遍历对他调用
+//                         that.$watchEvent[key].forEach((item, index) => {
+//                             item.update()
+//                         })
+//                     }
+//                 }
+//             })
+//         }
+//     }
+// }
+
+
+// //3、 写一个新的构造器监听视图层的变化
+// class Watch {
+//     constructor(vm, variable, view, attr) {
+//         this.vm = vm
+//         this.key = variable
+//         this.view = view
+//         this.attr = attr
+//     }
+//     update() {
+//         console.log(123);
+//         // 相当于item.textContent=this[变量]
+//         this.view[this.attr] = this.vm[this.key]
+//     }
+// }
+
+
+
+// **6v-model的源码
+// 模板语法、生命周期、事件绑定、data劫持、视图更新
 class Vue {
     constructor(options) {
         this.$options = options
-        //1、 watchEvent这个对象里键名就是使用变量，键值就是使用了几次就有几个watch
         this.$watchEvent = {}
 
-        if (typeof options.beforeCreate == 'function') {
+
+
+        if (typeof options.beforeCreate === 'function') {
             options.beforeCreate.bind(this)()
         }
-        this.$data = options.data;
+        this.$data = options.data
         this.proxyData()
-        // 执行更行
-        this.viewUpdate()
-
-        if (typeof options.created == 'function') {
+        this.proxyUpdate()
+        if (typeof options.created === 'function') {
             options.created.bind(this)()
         }
-        if (typeof options.beforeMount == 'function') {
+        if (typeof options.beforeMount === 'function') {
             options.beforeMount.bind(this)()
         }
-        this.$el = document.querySelector(options.el);
+        this.$el = document.querySelector(options.el)
         this.replace1(this.$el)
-
-        if (typeof options.mounted == 'function') {
+        if (typeof options.mounted === 'function') {
             options.mounted.bind(this)()
         }
+
+
 
     }
     replace1(node) {
         node.childNodes.forEach((item, index) => {
             if (item.nodeType === 3) {
-                let reg = /\{\{(.*?)\}\}/g;
+                console.log(item, '123123');
+                let reg = /\{\{(.*?)\}\}/g
                 let text = item.textContent;
                 item.textContent = text.replace(reg, (a, b) => {
-                    b = b.trim()
-                    // 2、如果模板语法中没有这个数据就不去渲染
                     if (this.hasOwnProperty(b)) {
-                        // 把参数传入视图更新的构造器函数
-                        // b是data里的变量，item是当前要替换的视图层
-                        // textContent是改变node文本节点的属性
                         let watch = new Watch(this, b, item, 'textContent')
                         if (this.$watchEvent[b]) {
                             this.$watchEvent[b].push(watch)
                         } else {
-
-                            this.$watchEvent[b] = [];
+                            this.$watchEvent[b] = []
                             this.$watchEvent[b].push(watch)
                         }
                     }
                     return this.$data[b]
                 })
             } else if (item.nodeType === 1) {
+                console.log(item, 'itemmmmmmmm');
+                this.replace1(item)
+
+                // 找到dom元素中带有v - model属性的元素
+                if (item.hasAttribute('v-model')) {
+                    let attr = item.getAttribute('v-model').trim()
+                    if (this.hasOwnProperty(attr)) {
+                        // 在当前dom找到的v-mode，就改变这个元素的value值
+                        item.value = this[attr]
+                    }
+                    item.addEventListener('input', (e) => {
+                        this[attr] = item.value
+                    })
+                }
                 if (item.hasAttribute('@click')) {
-                    let attr = item.getAttribute('@click');
+                    let attr = item.getAttribute('@click').trim()
                     item.addEventListener('click', (e) => {
                         let fn = this.$options.methods[attr].bind(this)
                         fn(e)
                     })
                 }
-                if (item.childNodes.length > 0) {
-                    this.replace1(item)
-                }
+                // if (item.childNodes.length > 0) {
+                // }
+
             }
         })
     }
@@ -265,11 +394,10 @@ class Vue {
             })
         }
     }
-    //4、 监控this上面的data发生变化就进行数据的更新
-    viewUpdate() {
+    proxyUpdate() {
         for (var key in this.$data) {
-            let value = this.$data[key];
-            let that = this;
+            let value = this.$data[key]
+            let that = this
             Object.defineProperty(this.$data, key, {
                 get() {
                     return value
@@ -277,7 +405,6 @@ class Vue {
                 set(val) {
                     value = val
                     if (that.$watchEvent[key]) {
-                        // 如果watchEvent使用了某个变量几次，就存在几个watch实例化，就遍历对他调用
                         that.$watchEvent[key].forEach((item, index) => {
                             item.update()
                         })
@@ -286,20 +413,17 @@ class Vue {
             })
         }
     }
+
+
 }
-
-
-//3、 写一个新的构造器监听视图层的变化
 class Watch {
-    constructor(vm, variable, view, attr) {
+    constructor(vm, variable, dom, attr) {
         this.vm = vm
-        this.key = variable
-        this.view = view
+        this.varr = variable;
+        this.dom = dom
         this.attr = attr
     }
     update() {
-        console.log(123);
-        // 相当于item.textContent=this[变量]
-        this.view[this.attr] = this.vm[this.key]
+        this.dom[this.attr] = this.vm[this.varr]
     }
 }
